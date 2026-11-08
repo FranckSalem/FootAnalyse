@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ballon stylisé + barres de statistiques -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#F3F7F4"
+        android:pathData="M54,30a24,24 0 1,0 0.01,0z" />
+    <path android:fillColor="#16261D"
+        android:pathData="M54,44 L63,50.5 L59.5,61 L48.5,61 L45,50.5 Z" />
+    <path android:strokeColor="#16261D" android:strokeWidth="2"
+        android:pathData="M54,44 L54,33 M63,50.5 L73,47 M59.5,61 L66,70 M48.5,61 L42,70 M45,50.5 L35,47" />
+    <path android:fillColor="#E3A83A"
+        android:pathData="M74,72h5v12h-5z M81,66h5v18h-5z" />
+</vector>

@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.FootAnalyse" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/board</item>
+    </style>
+    <color name="board">#16261D</color>
+    <color name="turf">#1F7A4A</color>
+    <color name="ink">#F3F7F4</color>
+</resources>

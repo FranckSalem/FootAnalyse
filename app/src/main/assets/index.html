@@ -1,0 +1,696 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style></head><body>
+<title>Analyse Confrontations Foot</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout : appli mobile — tableau d'affichage en haut, un écran par onglet, barre d'onglets fixée en bas */
+:root{
+  --bg:#eef2ee; --surface:#ffffff; --ink:#14201a; --muted:#5b6b62; --line:#d5ded8;
+  --turf:#1f7a4a; --turf-ink:#ffffff; --board:#16261d; --board-ink:#f3f7f4; --amber:#c98a12;
+  --good:#1f7a4a; --warn:#b26b00; --bad:#b3362c; --chip:#e3ece6;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1612; --surface:#15211b; --ink:#e6eee9; --muted:#97a89e; --line:#27362e;
+  --turf:#39a96b; --turf-ink:#06110b; --board:#0a120e; --board-ink:#eaf2ed; --amber:#e3a83a;
+  --good:#4cc283; --warn:#e3a83a; --bad:#ef7a6e; --chip:#1e2d25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1612; --surface:#15211b; --ink:#e6eee9; --muted:#97a89e; --line:#27362e;
+  --turf:#39a96b; --turf-ink:#06110b; --board:#0a120e; --board-ink:#eaf2ed; --amber:#e3a83a;
+  --good:#4cc283; --warn:#e3a83a; --bad:#ef7a6e; --chip:#1e2d25; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 96px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.wrap>.wrap{width:100%;min-width:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h2{font-size:1.4rem;font-weight:700;text-transform:uppercase}
+h3{font-size:1.1rem;font-weight:700;text-transform:uppercase;color:var(--muted)}
+p{margin:0}
+.label{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.note{font-size:.86rem;color:var(--muted)}
+.board{background:var(--board);color:var(--board-ink);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.board .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.board h1{font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--amber)}
+.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.teams input{width:100%;min-width:0;background:transparent;border:0;border-bottom:2px solid rgba(255,255,255,.25);border-radius:0;
+  color:var(--board-ink);font-family:var(--f-display);font-size:1.6rem;font-weight:800;text-transform:uppercase;padding:2px 0}
+.teams input#teamB{text-align:right}
+.teams input:focus{outline:none;border-bottom-color:var(--amber)}
+.teams .vs{font-family:var(--f-num);color:var(--amber);font-weight:700}
+.board .meta{font-size:.85rem;opacity:.85}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+button{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;cursor:pointer}
+button.primary{background:var(--turf);color:var(--turf-ink);border-color:var(--turf)}
+button.small{padding:4px 9px;font-size:.84rem}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-width:0}
+textarea{width:100%;min-height:100px;resize:vertical;font-size:.9rem}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+.h2h{min-width:520px}
+th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:5px 4px;border-bottom:1px solid var(--line)}
+td input.sc{width:62px;text-align:center;font-family:var(--f-num)}
+td input.dt{width:122px}
+.derived{font-family:var(--f-num);font-size:.85rem;color:var(--muted)}
+button.x{padding:4px 9px;color:var(--bad)}
+.verdicts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.v{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.big{font-family:var(--f-display);font-size:2.5rem;font-weight:800;line-height:1}
+.bar{height:8px;border-radius:5px;background:var(--chip);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--turf)}
+.sub{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.85rem;color:var(--muted)}
+.sub b{font-family:var(--f-num);color:var(--ink);font-weight:600;text-align:right}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--chip);color:var(--ink);white-space:nowrap}
+.pill.good{background:var(--good);color:var(--surface)} .pill.warn{background:var(--warn);color:var(--surface)} .pill.bad{background:var(--bad);color:var(--surface)}
+.halves{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.half{border-radius:10px;padding:12px;background:var(--chip);display:flex;flex-direction:column;gap:4px}
+.half.win{background:var(--turf);color:var(--turf-ink)}
+.half.win .label{color:var(--turf-ink);opacity:.85}
+.half .big{font-size:2.1rem}
+/* marchés */
+.mk{display:grid;grid-template-columns:minmax(0,1fr) auto 76px;gap:6px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.mk:last-child{border-bottom:0}
+.mk .name{font-weight:600}
+.mk .p{font-family:var(--f-num);font-weight:700;text-align:right}
+.mk input{width:76px;text-align:center;font-family:var(--f-num)}
+.mk .res{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.84rem;color:var(--muted)}
+.mk .res .acts{margin-left:auto;display:flex;gap:6px}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.score{background:var(--chip);border-radius:8px;padding:8px;text-align:center}
+.score b{display:block;font-family:var(--f-display);font-size:1.5rem}
+.score span{font-family:var(--f-num);font-size:.82rem;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{background:var(--chip);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font-family:var(--f-num);font-size:1.25rem}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.alert{border-radius:10px;padding:10px 12px;font-weight:600;border:1px solid var(--bad);color:var(--bad)}
+.bet{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.bet:last-child{border-bottom:0}
+.bet .meta{font-size:.82rem;color:var(--muted)}
+.bet .acts{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.chart{width:100%;height:150px;display:block}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .line{fill:none;stroke:var(--turf);stroke-width:2.5}
+.chart .zero{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1}
+.chart text{fill:var(--muted);font-family:var(--f-num);font-size:11px}
+.chart .dot{fill:var(--turf)}
+.links{display:flex;gap:12px;flex-wrap:wrap}
+.links a{color:var(--turf);font-weight:600}
+.status{font-size:.88rem}
+.status.err{color:var(--bad)}
+details summary{cursor:pointer;font-weight:600}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+nav.tabs button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:.74rem;color:var(--muted);border-radius:8px}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav.tabs button[aria-selected="true"]{color:var(--turf);background:var(--chip)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--board);color:var(--board-ink);padding:8px 14px;border-radius:99px;font-size:.88rem;z-index:30}
+@media (max-width:460px){.teams input{font-size:1.25rem}.big{font-size:2.1rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="board">
+    <div class="top">
+      <h1>Analyse des confrontations</h1>
+      <span class="pill" id="sampleTag">Données d'exemple</span>
+    </div>
+    <div class="teams">
+      <input id="teamA" aria-label="Équipe A">
+      <span class="vs">VS</span>
+      <input id="teamB" aria-label="Équipe B">
+    </div>
+    <div class="meta" id="boardMeta">—</div>
+  </header>
+
+  <!-- ONGLET ANALYSE -->
+  <div id="tab-analyse" class="wrap" style="gap:16px">
+    <section class="panel" aria-labelledby="h-net">
+      <h2 id="h-net">Connexion internet</h2>
+      <p class="note" id="netIntro">Avec une clé gratuite API-Football (api-football.com, 100 requêtes par jour), l'application récupère seule les confrontations avec les scores à la mi-temps et les meilleures cotes du prochain match.</p>
+      <div class="fields">
+        <div class="field"><label class="label" for="apiKey">Clé API-Football</label><input id="apiKey" type="password" autocomplete="off" placeholder="Votre clé"></div>
+      </div>
+      <div class="row">
+        <button class="primary" id="fetchH2H">Récupérer les confrontations</button>
+        <button id="fetchOdds">Récupérer les cotes du prochain match</button>
+      </div>
+      <span class="status" id="netStatus"></span>
+      <details>
+        <summary>Sans clé : copier-coller depuis un site</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          <p class="note">Ouvrez la page « face à face » des deux équipes, copiez le tableau des matchs et collez-le ici.</p>
+          <div class="links" id="links"></div>
+          <textarea id="paste" placeholder="Collez ici le texte copié depuis Flashscore, SofaScore, Soccerway…"></textarea>
+          <div class="row"><button id="importBtn">Lire le texte</button><span class="status" id="importStatus"></span></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-h2h">
+      <div class="row spread">
+        <h2 id="h-h2h">Confrontations directes</h2>
+        <label class="row note"><input type="checkbox" id="recency"> Plus de poids aux matchs récents</label>
+      </div>
+      <div class="tablewrap">
+        <table class="h2h">
+          <thead><tr><th>Date</th><th>Lieu</th><th>Mi-temps</th><th>Final</th><th>2ᵉ MT</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="row"><button id="addBtn">+ Ajouter un match</button><button id="clearBtn">Vider</button><span class="note">Scores : buts A-buts B, ex. <span class="num">1-0</span></span></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-btts">
+      <h2 id="h-btts">Les deux équipes marquent</h2>
+      <div class="verdicts" id="bttsCards"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-half">
+      <h2 id="h-half">Mi-temps la plus prolifique</h2>
+      <div class="halves" id="halves"></div>
+      <div class="sub" id="halfDetail"></div>
+      <p class="note" id="halfVerdict"></p>
+    </section>
+  </div>
+
+  <!-- ONGLET MARCHÉS -->
+  <div id="tab-marches" class="wrap" style="gap:16px" hidden>
+    <section class="panel">
+      <h2>Cotes et valeur</h2>
+      <p class="note">Entrez la cote de votre bookmaker à côté de chaque pari. « Valeur » veut dire que notre probabilité est plus haute que celle de la cote : c'est le seul type de pari rentable sur la durée. La mise conseillée suit votre bankroll.</p>
+      <div id="limitBanner1"></div>
+      <div id="markets"></div>
+    </section>
+    <section class="panel">
+      <h2>Scores exacts les plus probables</h2>
+      <div class="scores" id="scores"></div>
+    </section>
+  </div>
+
+  <!-- ONGLET BANKROLL -->
+  <div id="tab-bankroll" class="wrap" style="gap:16px" hidden>
+    <section class="panel">
+      <h2>Ma bankroll</h2>
+      <p class="note">La bankroll est l'argent réservé aux paris, séparé de vos dépenses. La méthode de Kelly fractionnée calcule une mise prudente selon votre avantage ; les plafonds vous protègent des séries de pertes.</p>
+      <div class="fields">
+        <div class="field"><label class="label" for="capital">Capital de départ</label><input id="capital" inputmode="decimal"></div>
+        <div class="field"><label class="label" for="currency">Monnaie</label><input id="currency" maxlength="5"></div>
+        <div class="field"><label class="label" for="kelly">Prudence (Kelly)</label>
+          <select id="kelly"><option value="0.125">Très prudent (1/8)</option><option value="0.25">Prudent (1/4)</option><option value="0.5">Agressif (1/2)</option></select></div>
+        <div class="field"><label class="label" for="maxPct">Mise max par pari (%)</label><input id="maxPct" inputmode="decimal"></div>
+        <div class="field"><label class="label" for="dayLimit">Perte max par jour</label><input id="dayLimit" inputmode="decimal"></div>
+        <div class="field"><label class="label" for="minEdge">Avantage minimum (%)</label><input id="minEdge" inputmode="decimal"></div>
+      </div>
+      <div class="kpis" id="bankKpis"></div>
+      <div id="limitBanner2"></div>
+    </section>
+    <section class="panel">
+      <h2>Règles pour durer</h2>
+      <ul class="note" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+        <li>Ne pariez que lorsque l'application affiche « Valeur ». Sans valeur, le bookmaker gagne sur la durée.</li>
+        <li>Ne cherchez jamais à « vous refaire » après une perte : respectez la perte max du jour.</li>
+        <li>Jugez vos résultats sur au moins 100 paris, pas sur une semaine.</li>
+        <li>Les combinés multiplient la marge du bookmaker : gardez-les petits.</li>
+        <li>Si le jeu devient une source de stress ou de dettes, arrêtez et parlez-en à un proche.</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- ONGLET JOURNAL -->
+  <div id="tab-journal" class="wrap" style="gap:16px" hidden>
+    <section class="panel">
+      <h2>Mes résultats</h2>
+      <div class="kpis" id="journalKpis"></div>
+      <svg class="chart" id="chart" viewBox="0 0 600 150" preserveAspectRatio="none" aria-label="Évolution du profit"></svg>
+      <p class="note" id="chartNote"></p>
+    </section>
+    <section class="panel">
+      <h2>Ajouter un pari</h2>
+      <div class="fields">
+        <div class="field"><label class="label" for="jLabel">Pari</label><input id="jLabel" placeholder="Ex. Les deux marquent 2ᵉ MT"></div>
+        <div class="field"><label class="label" for="jOdds">Cote</label><input id="jOdds" inputmode="decimal"></div>
+        <div class="field"><label class="label" for="jStake">Mise</label><input id="jStake" inputmode="decimal"></div>
+      </div>
+      <div class="row"><button class="primary" id="jAdd">Ajouter au journal</button></div>
+    </section>
+    <section class="panel">
+      <h2>Historique</h2>
+      <div id="betList"></div>
+    </section>
+  </div>
+
+  <!-- ONGLET COMBINÉ -->
+  <div id="tab-combine" class="wrap" style="gap:16px" hidden>
+    <section class="panel">
+      <h2>Calculateur de combiné</h2>
+      <p class="note">Ajoutez des sélections depuis l'onglet Marchés (bouton « Combiné ») ou à la main. Évitez deux sélections du même match : elles sont liées et le calcul devient faux.</p>
+      <div id="comboList"></div>
+      <div class="fields">
+        <div class="field"><label class="label" for="cLabel">Sélection</label><input id="cLabel" placeholder="Ex. Victoire Équipe X"></div>
+        <div class="field"><label class="label" for="cOdds">Cote</label><input id="cOdds" inputmode="decimal"></div>
+        <div class="field"><label class="label" for="cProb">Votre probabilité (%)</label><input id="cProb" inputmode="decimal"></div>
+      </div>
+      <div class="row"><button id="cAdd">Ajouter la sélection</button><button id="cClear">Tout effacer</button></div>
+      <div class="kpis" id="comboKpis"></div>
+      <div class="row"><button class="primary" id="cToJournal">Enregistrer le combiné au journal</button></div>
+    </section>
+  </div>
+
+  <details class="panel">
+    <summary>Comment les probabilités sont calculées</summary>
+    <p class="note">Les buts de la 2ᵉ mi-temps = score final − score à la pause. Deux estimations sont mélangées : la fréquence observée dans les confrontations et un modèle de Poisson basé sur les buts moyens de chaque équipe par mi-temps, ramenés vers les moyennes habituelles du football quand il y a peu de matchs. Plus il y a de confrontations, plus la fréquence observée compte. Les confrontations directes ne disent pas tout : forme récente, blessures et enjeu du match comptent aussi. Aucune méthode ne garantit un gain.</p>
+  </details>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" data-tab="analyse" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/></svg>Analyse</button>
+  <button role="tab" data-tab="marches" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Marchés</button>
+  <button role="tab" data-tab="bankroll" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12.5h2M3 10h18"/></svg>Bankroll</button>
+  <button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M6 3h11l3 3v15H6z"/><path d="M9 9h8M9 13h8M9 17h5"/></svg>Journal</button>
+  <button role="tab" data-tab="combine" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/><circle cx="19" cy="18" r="2"/></svg>Combiné</button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const PRIOR={h1:0.55,h2:0.72},K=3;
+const SAMPLE_MATCHES=[
+ {date:"2026-09-14",venue:"A",ht:"1-0",ft:"2-1"},{date:"2026-03-02",venue:"B",ht:"0-0",ft:"1-1"},
+ {date:"2025-10-19",venue:"A",ht:"1-1",ft:"3-2"},{date:"2025-04-06",venue:"B",ht:"0-1",ft:"1-2"},
+ {date:"2024-11-24",venue:"A",ht:"0-0",ft:"2-0"},{date:"2024-05-12",venue:"B",ht:"1-0",ft:"1-1"},
+ {date:"2023-12-03",venue:"N",ht:"0-1",ft:"2-2"},{date:"2023-06-18",venue:"A",ht:"0-0",ft:"0-1"}];
+const DEFAULT={teamA:"AS Lukaya",teamB:"FC Mbudi",sample:true,recency:true,matches:SAMPLE_MATCHES,odds:{},apiKey:"",
+  bank:{capital:"100",currency:"$",kelly:"0.25",maxPct:"3",dayLimit:"10",minEdge:"5"},
+  bets:[],combo:[],tab:"analyse"};
+let S;
+try{S=JSON.parse(localStorage.getItem("foot-app")||"null")}catch(e){S=null}
+if(!S||!Array.isArray(S.matches))S=JSON.parse(JSON.stringify(DEFAULT));
+for(const k in DEFAULT)if(S[k]===undefined)S[k]=JSON.parse(JSON.stringify(DEFAULT[k]));
+for(const k in DEFAULT.bank)if(S.bank[k]===undefined)S.bank[k]=DEFAULT.bank[k];
+function save(){try{localStorage.setItem("foot-app",JSON.stringify(S))}catch(e){}}
+
+const parse=s=>{const m=String(s||"").trim().match(/^(\d+)\s*[-:–]\s*(\d+)$/);return m?[+m[1],+m[2]]:null};
+const num=v=>{const x=parseFloat(String(v??"").replace(",","."));return isFinite(x)?x:NaN};
+const pct=x=>isFinite(x)?Math.round(x*100)+" %":"—";
+const fx=(x,d=2)=>isFinite(x)?x.toFixed(d):"—";
+const money=x=>isFinite(x)?(Math.round(x*100)/100).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+(S.bank.currency||""):"—";
+const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
+const esc=t=>{const d=document.createElement("span");d.textContent=String(t);return d.innerHTML};
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const A=()=>S.teamA||"Équipe A",B=()=>S.teamB||"Équipe B";
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+
+/* ---------- MODÈLE ---------- */
+const MARKETS=[
+ {k:"1",g:"Résultat du match",l:()=>"Victoire "+A(),e:x=>x.A>x.B,m:M=>M.p1},
+ {k:"N",g:"Résultat du match",l:()=>"Match nul",e:x=>x.A===x.B,m:M=>M.pN},
+ {k:"2",g:"Résultat du match",l:()=>"Victoire "+B(),e:x=>x.B>x.A,m:M=>M.p2},
+ {k:"1N",g:"Double chance",l:()=>A()+" ou nul",e:x=>x.A>=x.B,m:M=>M.p1+M.pN},
+ {k:"12",g:"Double chance",l:()=>A()+" ou "+B(),e:x=>x.A!==x.B,m:M=>M.p1+M.p2},
+ {k:"N2",g:"Double chance",l:()=>"Nul ou "+B(),e:x=>x.B>=x.A,m:M=>M.pN+M.p2},
+ {k:"o15",g:"Nombre de buts",l:()=>"Plus de 1,5 buts",e:x=>x.A+x.B>1,m:M=>M.ov(1)},
+ {k:"o25",g:"Nombre de buts",l:()=>"Plus de 2,5 buts",e:x=>x.A+x.B>2,m:M=>M.ov(2)},
+ {k:"u25",g:"Nombre de buts",l:()=>"Moins de 2,5 buts",e:x=>x.A+x.B<3,m:M=>1-M.ov(2)},
+ {k:"o35",g:"Nombre de buts",l:()=>"Plus de 3,5 buts",e:x=>x.A+x.B>3,m:M=>M.ov(3)},
+ {k:"btts",g:"Les deux marquent",l:()=>"Les deux marquent (match)",e:x=>x.A>0&&x.B>0,m:M=>M.btts},
+ {k:"bt1",g:"Les deux marquent",l:()=>"Les deux marquent en 1ʳᵉ MT",e:x=>x.a1>0&&x.b1>0,m:M=>M.bt1},
+ {k:"bt2",g:"Les deux marquent",l:()=>"Les deux marquent en 2ᵉ MT",e:x=>x.a2>0&&x.b2>0,m:M=>M.bt2},
+ {k:"h1o05",g:"Buts par mi-temps",l:()=>"Au moins 1 but en 1ʳᵉ MT",e:x=>x.a1+x.b1>0,m:M=>1-Math.exp(-M.L1)},
+ {k:"h2o05",g:"Buts par mi-temps",l:()=>"Au moins 1 but en 2ᵉ MT",e:x=>x.a2+x.b2>0,m:M=>1-Math.exp(-M.L2)},
+ {k:"h1o15",g:"Buts par mi-temps",l:()=>"Plus de 1,5 buts en 1ʳᵉ MT",e:x=>x.a1+x.b1>1,m:M=>1-Math.exp(-M.L1)*(1+M.L1)},
+ {k:"h2o15",g:"Buts par mi-temps",l:()=>"Plus de 1,5 buts en 2ᵉ MT",e:x=>x.a2+x.b2>1,m:M=>1-Math.exp(-M.L2)*(1+M.L2)},
+ {k:"more1",g:"Mi-temps la plus prolifique",l:()=>"1ʳᵉ mi-temps",e:x=>x.a1+x.b1>x.a2+x.b2,m:M=>M.more1},
+ {k:"more2",g:"Mi-temps la plus prolifique",l:()=>"2ᵉ mi-temps",e:x=>x.a2+x.b2>x.a1+x.b1,m:M=>M.more2},
+ {k:"eq",g:"Mi-temps la plus prolifique",l:()=>"Égalité",e:x=>x.a1+x.b1===x.a2+x.b2,m:M=>M.eq}];
+
+let R={};
+function model(){
+  const valid=S.matches.map(m=>({m,ht:parse(m.ht),ft:parse(m.ft)}))
+    .filter(x=>x.ht&&x.ft&&x.ft[0]>=x.ht[0]&&x.ft[1]>=x.ht[1])
+    .sort((a,b)=>(b.m.date||"").localeCompare(a.m.date||""))
+    .map((x,i)=>({a1:x.ht[0],b1:x.ht[1],a2:x.ft[0]-x.ht[0],b2:x.ft[1]-x.ht[1],A:x.ft[0],B:x.ft[1],w:S.recency?Math.pow(0.85,i):1}));
+  const n=valid.length,W=valid.reduce((s,x)=>s+x.w,0);
+  const sum=f=>valid.reduce((s,x)=>s+x.w*f(x),0);
+  const shrink=(v,p)=>(v+K*p)/(W+K);
+  const lA1=shrink(sum(x=>x.a1),PRIOR.h1),lB1=shrink(sum(x=>x.b1),PRIOR.h1),lA2=shrink(sum(x=>x.a2),PRIOR.h2),lB2=shrink(sum(x=>x.b2),PRIOR.h2);
+  const sc=l=>1-Math.exp(-l);
+  const LA=lA1+lA2,LB=lB1+lB2,L1=lA1+lB1,L2=lA2+lB2;
+  const M={L1,L2,bt1:sc(lA1)*sc(lB1),bt2:sc(lA2)*sc(lB2),btts:sc(LA)*sc(LB),p1:0,pN:0,p2:0,more1:0,more2:0,eq:0};
+  const grid=[];
+  for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){const p=pois(LA,i)*pois(LB,j);grid.push({i,j,p});if(i>j)M.p1+=p;else if(i<j)M.p2+=p;else M.pN+=p}
+  M.ov=t=>grid.reduce((s,c)=>s+(c.i+c.j>t?c.p:0),0);
+  for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){const p=pois(L1,i)*pois(L2,j);if(i>j)M.more1+=p;else if(j>i)M.more2+=p;else M.eq+=p}
+  const wE=n/(n+5);
+  const est={},emp={},mod={};
+  MARKETS.forEach(mk=>{mod[mk.k]=mk.m(M);emp[mk.k]=W?sum(x=>mk.e(x)?1:0)/W:NaN;est[mk.k]=n?wE*emp[mk.k]+(1-wE)*mod[mk.k]:mod[mk.k]});
+  R={n,W,valid,est,emp,mod,lA1,lB1,lA2,lB2,LA,LB,grid,g1:W?sum(x=>x.a1+x.b1)/W:NaN,g2:W?sum(x=>x.a2+x.b2)/W:NaN,
+     o05_1:W?sum(x=>x.a1+x.b1>0?1:0)/W:NaN,o05_2:W?sum(x=>x.a2+x.b2>0?1:0)/W:NaN};
+}
+
+/* ---------- BANKROLL ---------- */
+function profitOf(b){const o=num(b.odds),s=num(b.stake);return b.status==="won"?s*(o-1):b.status==="lost"?-s:0}
+function bankState(){
+  const start=num(S.bank.capital)||0;
+  const settled=S.bets.filter(b=>b.status==="won"||b.status==="lost"||b.status==="void");
+  const profit=settled.reduce((s,b)=>s+profitOf(b),0);
+  const pending=S.bets.filter(b=>b.status==="pending").reduce((s,b)=>s+(num(b.stake)||0),0);
+  const todayP=S.bets.filter(b=>b.date===today()).reduce((s,b)=>s+profitOf(b)-(b.status==="pending"?num(b.stake)||0:0),0);
+  const lim=num(S.bank.dayLimit);
+  return {start,profit,current:start+profit,available:start+profit-pending,pending,todayP,blocked:isFinite(lim)&&lim>0&&todayP<=-lim,settled};
+}
+function stakeFor(p,o){
+  const bs=bankState();const f=(p*o-1)/(o-1);
+  if(!(f>0)||!(bs.available>0))return 0;
+  const k=num(S.bank.kelly)||0.25,cap=(num(S.bank.maxPct)||3)/100;
+  return Math.max(0,Math.min(bs.current*k*f,bs.current*cap,bs.available));
+}
+
+/* ---------- RENDUS ---------- */
+function renderBoard(){
+  $("sampleTag").hidden=!S.sample;
+  const n=R.n;
+  $("boardMeta").textContent=n?`${n} confrontation${n>1?"s":""} · ${(R.g1+R.g2).toFixed(2)} buts par match · ${A()} ${pct(R.est["1"])} · nul ${pct(R.est.N)} · ${B()} ${pct(R.est["2"])}`:"Ajoutez au moins une confrontation avec les scores mi-temps et final.";
+}
+function renderRows(){
+  const tb=$("rows");tb.textContent="";
+  S.matches.forEach((m,i)=>{
+    const tr=document.createElement("tr");
+    const ht=parse(m.ht),ft=parse(m.ft);
+    const sh=(ht&&ft&&ft[0]>=ht[0]&&ft[1]>=ht[1])?(ft[0]-ht[0])+"-"+(ft[1]-ht[1]):"—";
+    tr.innerHTML=`<td><input class="dt" type="date" id="d${i}" aria-label="Date"></td>
+      <td><select id="v${i}" aria-label="Lieu"><option value="A"></option><option value="B"></option><option value="N">Neutre</option></select></td>
+      <td><input class="sc" id="h${i}" placeholder="0-0" aria-label="Score mi-temps"></td>
+      <td><input class="sc" id="f${i}" placeholder="0-0" aria-label="Score final"></td>
+      <td><span class="derived">${sh}</span></td>
+      <td><button class="x" aria-label="Supprimer ce match">✕</button></td>`;
+    const sel=tr.querySelector("select");sel.options[0].textContent="Chez "+A();sel.options[1].textContent="Chez "+B();
+    tr.querySelector("#d"+i).value=m.date||"";sel.value=m.venue||"N";
+    tr.querySelector("#h"+i).value=m.ht||"";tr.querySelector("#f"+i).value=m.ft||"";
+    tr.querySelector("#d"+i).onchange=e=>{m.date=e.target.value;edited(true)};
+    sel.onchange=e=>{m.venue=e.target.value;edited()};
+    tr.querySelector("#h"+i).onchange=e=>{m.ht=e.target.value;edited(true)};
+    tr.querySelector("#f"+i).onchange=e=>{m.ft=e.target.value;edited(true)};
+    tr.querySelector("button").onclick=()=>{S.matches.splice(i,1);edited(true)};
+    tb.appendChild(tr);
+  });
+}
+function conf(){return R.n>=8?["Fiabilité bonne","good"]:R.n>=4?["Fiabilité moyenne","warn"]:["Peu de matchs","bad"]}
+function renderAnalyse(){
+  const c=conf();
+  const card=(t,k,extra)=>`<div class="v"><div class="label">${t}</div>
+    <div class="big num">${pct(R.est[k])}</div><div class="bar"><i style="width:${Math.round((R.est[k]||0)*100)}%"></i></div>
+    <div class="sub"><span>Observé (${R.n} matchs)</span><b>${pct(R.emp[k])}</b><span>Modèle</span><b>${pct(R.mod[k])}</b>${extra||""}</div>
+    <div><span class="pill ${c[1]}">${c[0]}</span></div></div>`;
+  $("bttsCards").innerHTML=
+    card("1ʳᵉ mi-temps","bt1",`<span>Buts attendus ${esc(A())} / ${esc(B())}</span><b>${fx(R.lA1)} / ${fx(R.lB1)}</b>`)+
+    card("2ᵉ mi-temps","bt2",`<span>Buts attendus ${esc(A())} / ${esc(B())}</span><b>${fx(R.lA2)} / ${fx(R.lB2)}</b>`)+
+    card("Tout le match","btts","");
+  const e=R.est,win=e.more2>e.more1?2:1;
+  $("halves").innerHTML=[1,2].map(h=>`<div class="half ${h===win?"win":""}"><div class="label">${h===1?"1ʳᵉ mi-temps":"2ᵉ mi-temps"}</div>
+    <div class="big num">${pct(h===1?e.more1:e.more2)}</div><div style="font-size:.85rem">chance d'avoir plus de buts</div></div>`).join("");
+  $("halfDetail").innerHTML=`<span>Buts moyens 1ʳᵉ / 2ᵉ MT</span><b>${fx(R.g1)} / ${fx(R.g2)}</b>
+    <span>Autant de buts dans les deux MT</span><b>${pct(e.eq)}</b>
+    <span>Au moins 1 but : 1ʳᵉ / 2ᵉ</span><b>${pct(e.h1o05)} / ${pct(e.h2o05)}</b>
+    <span>Plus de 1,5 buts : 1ʳᵉ / 2ᵉ</span><b>${pct(e.h1o15)} / ${pct(e.h2o15)}</b>`;
+  const gap=Math.abs(e.more2-e.more1),lvl=gap>=0.2?"très forte":gap>=0.1?"nette":"légère";
+  $("halfVerdict").textContent=R.n?`Tendance ${lvl} : la ${win===2?"2ᵉ":"1ʳᵉ"} mi-temps a le plus de chances d'avoir le plus de buts (${pct(win===2?e.more2:e.more1)} contre ${pct(win===2?e.more1:e.more2)}).`:"";
+}
+function limitBanner(){const bs=bankState();return bs.blocked?`<div class="alert">Perte maximale du jour atteinte (${money(bs.todayP)}). Arrêtez pour aujourd'hui : les mises conseillées sont bloquées jusqu'à demain.</div>`:""}
+function renderMarkets(){
+  $("limitBanner1").innerHTML=limitBanner();
+  const box=$("markets");
+  if(!box.childElementCount){
+    let g="";
+    MARKETS.forEach(mk=>{
+      if(mk.g!==g){g=mk.g;const h=document.createElement("h3");h.textContent=g;h.style.marginTop="8px";box.appendChild(h)}
+      const d=document.createElement("div");d.className="mk";
+      d.innerHTML=`<span class="name" id="n_${mk.k}"></span><span class="p" id="p_${mk.k}"></span><input id="o_${mk.k}" inputmode="decimal" placeholder="cote" aria-label="Cote">
+        <div class="res" id="r_${mk.k}"></div>`;
+      box.appendChild(d);
+      const inp=d.querySelector("input");inp.value=S.odds[mk.k]||"";
+      inp.oninput=()=>{S.odds[mk.k]=inp.value;save();updateMarket(mk)};
+    });
+  }
+  MARKETS.forEach(updateMarket);
+  const top=R.grid.slice().sort((a,b)=>b.p-a.p).slice(0,6);
+  $("scores").innerHTML=top.map(c=>`<div class="score"><b>${c.i} - ${c.j}</b><span>${pct(c.p)} · cote juste ${fx(1/c.p,1)}</span></div>`).join("");
+}
+function updateMarket(mk){
+  const p=R.est[mk.k],o=num(S.odds[mk.k]);
+  $("n_"+mk.k).textContent=mk.l();
+  $("p_"+mk.k).textContent=pct(p);
+  const bs=bankState(),minE=(num(S.bank.minEdge)||0)/100;
+  let h=`<span>Cote juste <b class="num">${fx(1/p)}</b></span>`;
+  if(o>1){
+    const edge=p*o-1,cls=edge>=minE?"good":edge>-0.03?"warn":"bad",txt=edge>=minE?"Valeur":edge>-0.03?"Cote correcte":"Sans valeur";
+    h+=`<span class="pill ${cls}">${txt} ${edge>=0?"+":""}${Math.round(edge*100)} %</span>`;
+    const st=edge>=minE&&!bs.blocked?stakeFor(p,o):0;
+    if(st>0)h+=`<span>Mise conseillée <b class="num">${money(st)}</b></span>`;
+    h+=`<span class="acts"><button class="small" data-j="${mk.k}" ${st>0?"":"disabled"}>Journal</button><button class="small" data-c="${mk.k}">Combiné</button></span>`;
+  }
+  const r=$("r_"+mk.k);r.innerHTML=h;
+  const bj=r.querySelector("[data-j]"),bc=r.querySelector("[data-c]");
+  if(bj)bj.onclick=()=>{const st=stakeFor(p,o);S.bets.unshift({id:Date.now(),date:today(),match:A()+" - "+B(),label:mk.l(),odds:String(o),stake:st.toFixed(2),prob:p,status:"pending"});save();toast("Pari ajouté au journal");renderAll()};
+  if(bc)bc.onclick=()=>{S.combo.push({match:A()+" - "+B(),label:mk.l(),odds:String(o),prob:p});save();toast("Ajouté au combiné");renderCombo()};
+}
+function renderBank(){
+  const bs=bankState();
+  $("bankKpis").innerHTML=`<div class="kpi"><span class="label">Bankroll actuelle</span><b>${money(bs.current)}</b></div>
+    <div class="kpi"><span class="label">Profit total</span><b class="${bs.profit>=0?"pos":"neg"}">${bs.profit>=0?"+":""}${money(bs.profit)}</b></div>
+    <div class="kpi"><span class="label">Paris en cours</span><b>${money(bs.pending)}</b></div>
+    <div class="kpi"><span class="label">Aujourd'hui</span><b class="${bs.todayP>=0?"pos":"neg"}">${bs.todayP>=0?"+":""}${money(bs.todayP)}</b></div>`;
+  $("limitBanner2").innerHTML=limitBanner();
+}
+function renderJournal(){
+  const bs=bankState(),set=bs.settled.filter(b=>b.status!=="void");
+  const won=set.filter(b=>b.status==="won").length,staked=set.reduce((s,b)=>s+(num(b.stake)||0),0);
+  const roi=staked?bs.profit/staked:NaN;
+  const avgOdds=set.length?set.reduce((s,b)=>s+num(b.odds),0)/set.length:NaN;
+  $("journalKpis").innerHTML=`<div class="kpi"><span class="label">Paris terminés</span><b>${set.length}</b></div>
+    <div class="kpi"><span class="label">Réussite</span><b>${set.length?pct(won/set.length):"—"}</b></div>
+    <div class="kpi"><span class="label">Profit</span><b class="${bs.profit>=0?"pos":"neg"}">${bs.profit>=0?"+":""}${money(bs.profit)}</b></div>
+    <div class="kpi"><span class="label">ROI</span><b class="${roi>=0?"pos":"neg"}">${isFinite(roi)?(roi>=0?"+":"")+(roi*100).toFixed(1)+" %":"—"}</b></div>
+    <div class="kpi"><span class="label">Cote moyenne</span><b>${fx(avgOdds)}</b></div>`;
+  // courbe
+  const pts=[0];S.bets.slice().reverse().forEach(b=>{if(b.status==="won"||b.status==="lost")pts.push(pts[pts.length-1]+profitOf(b))});
+  const svg=$("chart");
+  if(pts.length<2){svg.innerHTML=`<text x="300" y="80" text-anchor="middle">La courbe apparaît après vos premiers paris terminés</text>`;$("chartNote").textContent="";}
+  else{
+    const min=Math.min(0,...pts),max=Math.max(0,...pts),span=(max-min)||1,W=600,H=150,pad=16;
+    const X=i=>pad+i*(W-2*pad)/(pts.length-1),Y=v=>H-pad-(v-min)*(H-2*pad)/span;
+    svg.innerHTML=`<line class="zero" x1="${pad}" x2="${W-pad}" y1="${Y(0)}" y2="${Y(0)}"/>
+      <polyline class="line" points="${pts.map((v,i)=>X(i)+","+Y(v)).join(" ")}"/>
+      <circle class="dot" cx="${X(pts.length-1)}" cy="${Y(pts[pts.length-1])}" r="4"/>`;
+    $("chartNote").textContent=`Profit cumulé sur ${pts.length-1} paris : de ${money(min)} au plus bas à ${money(max)} au plus haut.`+(set.length<100?" Moins de 100 paris : les résultats dépendent encore beaucoup de la chance.":"");
+  }
+  const list=$("betList");
+  if(!S.bets.length){list.innerHTML=`<p class="note">Aucun pari enregistré. Ajoutez-en depuis l'onglet Marchés ou avec le formulaire ci-dessus.</p>`;return}
+  const lab={pending:["En cours",""],won:["Gagné","good"],lost:["Perdu","bad"],void:["Remboursé","warn"]};
+  list.innerHTML=S.bets.map((b,i)=>`<div class="bet"><div><div><b>${esc(b.label)}</b></div>
+    <div class="meta">${esc(b.date)}${b.match?" · "+esc(b.match):""} · cote <span class="num">${esc(b.odds)}</span> · mise <span class="num">${money(num(b.stake))}</span>${Number.isFinite(b.prob)?" · estimé "+pct(b.prob):""}</div></div>
+    <div><span class="pill ${lab[b.status][1]}">${lab[b.status][0]}</span></div>
+    <div class="acts"><button class="small" data-s="won" data-i="${i}">Gagné</button><button class="small" data-s="lost" data-i="${i}">Perdu</button><button class="small" data-s="void" data-i="${i}">Remboursé</button><button class="small x" data-del="${i}">Supprimer</button></div></div>`).join("");
+  list.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const x=S.bets[+b.dataset.i];x.status=x.status===b.dataset.s?"pending":b.dataset.s;save();renderAll()});
+  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{S.bets.splice(+b.dataset.del,1);save();renderAll()});
+}
+function renderCombo(){
+  const L=$("comboList");
+  L.innerHTML=S.combo.length?S.combo.map((c,i)=>`<div class="bet"><div><b>${esc(c.label)}</b><div class="meta">${c.match?esc(c.match)+" · ":""}cote <span class="num">${esc(c.odds)}</span>${Number.isFinite(c.prob)?" · probabilité "+pct(c.prob):""}</div></div>
+    <div><button class="small x" data-rm="${i}">Retirer</button></div></div>`).join(""):`<p class="note">Aucune sélection pour l'instant.</p>`;
+  L.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{S.combo.splice(+b.dataset.rm,1);save();renderCombo()});
+  const odds=S.combo.reduce((s,c)=>s*(num(c.odds)||1),1);
+  const allP=S.combo.length&&S.combo.every(c=>Number.isFinite(c.prob));
+  const p=allP?S.combo.reduce((s,c)=>s*c.prob,1):NaN;
+  const ev=p*odds-1,imp=S.combo.length?1/odds:NaN;
+  const matches=S.combo.map(c=>c.match).filter(Boolean),dup=matches.length!==new Set(matches).size;
+  const st=isFinite(p)&&S.combo.length?stakeFor(p,odds):0;
+  $("comboKpis").innerHTML=`<div class="kpi"><span class="label">Cote totale</span><b>${S.combo.length?fx(odds):"—"}</b></div>
+    <div class="kpi"><span class="label">Chance réelle de gagner</span><b>${pct(p)}</b></div>
+    <div class="kpi"><span class="label">Chance selon la cote</span><b>${pct(imp)}</b></div>
+    <div class="kpi"><span class="label">Gain moyen par 1 misé</span><b class="${ev>=0?"pos":"neg"}">${isFinite(ev)?(ev>=0?"+":"")+(ev*100).toFixed(0)+" %":"—"}</b></div>
+    <div class="kpi"><span class="label">Mise conseillée</span><b>${st>0?money(st):"Aucune"}</b></div>`+
+    (dup?`<div class="alert" style="grid-column:1/-1">Deux sélections viennent du même match : le calcul est faussé. Gardez une seule sélection par match.</div>`:"")+
+    (S.combo.length>3?`<div class="alert" style="grid-column:1/-1">Plus de 3 sélections : la marge du bookmaker s'additionne à chaque ajout et la chance de gagner devient très faible.</div>`:"");
+  $("cToJournal").disabled=!S.combo.length;
+}
+function renderAll(){model();renderBoard();renderAnalyse();renderMarkets();renderBank();renderJournal();renderCombo()}
+function edited(rows){S.sample=false;save();if(rows)renderRows();renderAll()}
+
+/* ---------- ONGLETS ---------- */
+function showTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false"));
+  ["analyse","marches","bankroll","journal","combine"].forEach(x=>$("tab-"+x).hidden=x!==t);
+  S.tab=t;save();window.scrollTo(0,0);
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* ---------- SAISIES ---------- */
+["teamA","teamB"].forEach(id=>{$(id).value=S[id]||"";$(id).onchange=e=>{S[id]=e.target.value.trim();renderLinks();edited(true)}});
+$("recency").checked=S.recency!==false;$("recency").onchange=e=>{S.recency=e.target.checked;save();renderAll()};
+$("addBtn").onclick=()=>{S.matches.unshift({date:"",venue:"N",ht:"",ft:""});edited(true)};
+$("clearBtn").onclick=()=>{S.matches=[];edited(true)};
+["capital","currency","kelly","maxPct","dayLimit","minEdge"].forEach(id=>{$(id).value=S.bank[id];$(id).onchange=e=>{S.bank[id]=e.target.value;save();renderAll()}});
+$("jAdd").onclick=()=>{
+  const o=num($("jOdds").value),s=num($("jStake").value),l=$("jLabel").value.trim();
+  if(!l||!(o>1)||!(s>0)){toast("Indiquez le pari, une cote supérieure à 1 et une mise");return}
+  S.bets.unshift({id:Date.now(),date:today(),label:l,odds:String(o),stake:String(s),prob:NaN,status:"pending"});
+  $("jLabel").value=$("jOdds").value=$("jStake").value="";save();renderAll();toast("Pari ajouté");
+};
+$("cAdd").onclick=()=>{
+  const o=num($("cOdds").value),p=num($("cProb").value),l=$("cLabel").value.trim();
+  if(!l||!(o>1)){toast("Indiquez la sélection et une cote supérieure à 1");return}
+  S.combo.push({label:l,odds:String(o),prob:p>0&&p<=100?p/100:NaN,match:""});
+  $("cLabel").value=$("cOdds").value=$("cProb").value="";save();renderCombo();
+};
+$("cClear").onclick=()=>{S.combo=[];save();renderCombo()};
+$("cToJournal").onclick=()=>{
+  if(!S.combo.length)return;
+  const odds=S.combo.reduce((s,c)=>s*(num(c.odds)||1),1);
+  const p=S.combo.every(c=>Number.isFinite(c.prob))?S.combo.reduce((s,c)=>s*c.prob,1):NaN;
+  const st=isFinite(p)?stakeFor(p,odds):0;
+  S.bets.unshift({id:Date.now(),date:today(),label:"Combiné : "+S.combo.map(c=>c.label).join(" + "),odds:odds.toFixed(2),stake:(st||0).toFixed(2),prob:p,status:"pending"});
+  S.combo=[];save();renderAll();toast("Combiné enregistré — vérifiez la mise dans le journal");
+};
+
+/* ---------- INTERNET ---------- */
+function renderLinks(){
+  const q=encodeURIComponent(`${A()} ${B()} h2h`);
+  $("links").innerHTML=`<a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Chercher sur Google</a>
+    <a href="https://www.flashscore.fr/" target="_blank" rel="noopener">Flashscore</a>
+    <a href="https://www.sofascore.com/fr/" target="_blank" rel="noopener">SofaScore</a>`;
+}
+$("apiKey").value=S.apiKey||"";$("apiKey").onchange=e=>{S.apiKey=e.target.value.trim();save()};
+const net=$("netStatus");
+function say(t,err){net.className="status"+(err?" err":"");net.textContent=t}
+let netId=0;const netCbs={};
+window.__netCb=function(id,status,body){const cb=netCbs[id];if(!cb)return;delete netCbs[id];
+  if(status<0)cb.rej(new Error(body||"Pas de connexion internet"));else{try{cb.res(JSON.parse(body))}catch(e){cb.rej(new Error("Réponse illisible du serveur"))}}};
+async function api(path){
+  if(!S.apiKey)throw new Error("Entrez d'abord votre clé API-Football.");
+  const url="https://v3.football.api-sports.io"+path;
+  let j;
+  if(window.AndroidNet&&AndroidNet.get){j=await new Promise((res,rej)=>{const id=++netId;netCbs[id]={res,rej};AndroidNet.get(id,url,S.apiKey)})}
+  else{
+    try{const r=await fetch(url,{headers:{"x-apisports-key":S.apiKey}});j=await r.json()}
+    catch(e){throw new Error("Connexion impossible depuis cette page. La récupération automatique fonctionne dans l'application Android ; ici, utilisez le copier-coller ci-dessous.")}
+  }
+  const errs=j&&j.errors&&(Array.isArray(j.errors)?j.errors:Object.values(j.errors));
+  if(errs&&errs.length)throw new Error("API-Football : "+errs.join(" · "));
+  return j.response||[];
+}
+let teamIds=null;
+async function findTeams(){
+  const [ra,rb]=[await api("/teams?search="+encodeURIComponent(A())),await api("/teams?search="+encodeURIComponent(B()))];
+  if(!ra.length)throw new Error(`Équipe introuvable : « ${A()} ». Essayez le nom officiel (ex. « TP Mazembe »).`);
+  if(!rb.length)throw new Error(`Équipe introuvable : « ${B()} ». Essayez le nom officiel.`);
+  teamIds={a:ra[0].team.id,b:rb[0].team.id,na:ra[0].team.name,nb:rb[0].team.name};
+  return teamIds;
+}
+$("fetchH2H").onclick=async()=>{
+  const btn=$("fetchH2H");btn.disabled=true;say("Recherche des équipes…");
+  try{
+    const t=await findTeams();
+    say(`Confrontations ${t.na} – ${t.nb}…`);
+    const fx_=await api(`/fixtures/headtohead?h2h=${t.a}-${t.b}&last=20`);
+    const done=fx_.filter(f=>["FT","AET","PEN"].includes(f.fixture&&f.fixture.status&&f.fixture.status.short));
+    if(!done.length)throw new Error("Aucune confrontation terminée trouvée pour ces deux équipes.");
+    S.teamA=t.na;S.teamB=t.nb;$("teamA").value=t.na;$("teamB").value=t.nb;
+    S.matches=done.map(f=>{
+      const aHome=f.teams.home.id===t.a,ht=f.score.halftime||{},ft=f.score.fulltime||{};
+      const o=(h,a)=>h==null||a==null?"":(aHome?h+"-"+a:a+"-"+h);
+      return {date:String(f.fixture.date||"").slice(0,10),venue:aHome?"A":"B",ht:o(ht.home,ht.away),ft:o(ft.home,ft.away)};
+    });
+    const miss=S.matches.filter(m=>!parse(m.ht)).length;
+    say(`${S.matches.length} confrontations récupérées.`+(miss?` ${miss} sans score à la mi-temps (non comptées).`:""));
+    renderLinks();edited(true);
+  }catch(e){say(e.message||String(e),true)}finally{btn.disabled=false}
+};
+const ODDS_MAP=[
+ [n=>n==="match winner",{Home:"1",Draw:"N",Away:"2"}],
+ [n=>n==="double chance",{"Home/Draw":"1N","Home/Away":"12","Draw/Away":"N2"}],
+ [n=>n==="goals over/under",{"Over 1.5":"o15","Over 2.5":"o25","Under 2.5":"u25","Over 3.5":"o35"}],
+ [n=>n==="both teams score",{Yes:"btts"}],
+ [n=>n.includes("both teams")&&n.includes("first half"),{Yes:"bt1"}],
+ [n=>n.includes("both teams")&&n.includes("second half"),{Yes:"bt2"}],
+ [n=>n.includes("highest scoring half"),{"1st Half":"more1","First Half":"more1","2nd Half":"more2","Second Half":"more2",Draw:"eq"}],
+ [n=>n.includes("over/under")&&n.includes("first half"),{"Over 0.5":"h1o05","Over 1.5":"h1o15"}],
+ [n=>n.includes("over/under")&&n.includes("second half"),{"Over 0.5":"h2o05","Over 1.5":"h2o15"}]];
+const SWAP={"1":"2","2":"1","1N":"N2","N2":"1N"};
+$("fetchOdds").onclick=async()=>{
+  const btn=$("fetchOdds");btn.disabled=true;say("Recherche du prochain match…");
+  try{
+    const t=teamIds||await findTeams();
+    const nx=await api(`/fixtures/headtohead?h2h=${t.a}-${t.b}&next=1`);
+    if(!nx.length)throw new Error("Aucun match à venir entre ces deux équipes.");
+    const f=nx[0],aHome=f.teams.home.id===t.a;
+    say(`Cotes pour le ${String(f.fixture.date).slice(0,10)}…`);
+    const od=await api(`/odds?fixture=${f.fixture.id}`);
+    const books=(od[0]&&od[0].bookmakers)||[];
+    if(!books.length)throw new Error("Pas encore de cotes publiées pour ce match (elles arrivent souvent 1 à 14 jours avant).");
+    const best={};
+    books.forEach(bk=>(bk.bets||[]).forEach(bet=>{
+      const name=String(bet.name||"").toLowerCase();
+      const m=ODDS_MAP.find(([t])=>t(name));if(!m)return;
+      (bet.values||[]).forEach(v=>{let k=m[1][String(v.value)];if(!k)return;if(!aHome&&SWAP[k])k=SWAP[k];
+        const o=num(v.odd);if(o>1&&(!best[k]||o>best[k]))best[k]=o});
+    }));
+    const keys=Object.keys(best);
+    if(!keys.length)throw new Error("Cotes reçues, mais aucun des marchés suivis n'est proposé.");
+    keys.forEach(k=>S.odds[k]=String(best[k]));save();
+    $("markets").textContent="";renderMarkets();
+    say(`${keys.length} cotes remplies (meilleure cote parmi ${books.length} bookmakers). Voir l'onglet Marchés.`);
+  }catch(e){say(e.message||String(e),true)}finally{btn.disabled=false}
+};
+
+/* import par copier-coller : Claude si disponible, sinon lecture simple */
+let sample=null;
+function simpleParse(txt){
+  const out=[];const re=/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})[^\n]*?\n?[^\n]*?(\d+)\s*[-:]\s*(\d+)\s*\(\s*(\d+)\s*[-:]\s*(\d+)\s*\)/g;let m;
+  while((m=re.exec(txt))){let y=m[3].length===2?"20"+m[3]:m[3];out.push({date:`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`,venue:"N",ft:m[4]+"-"+m[5],ht:m[6]+"-"+m[7]})}
+  return out;
+}
+$("importBtn").onclick=async()=>{
+  const st=$("importStatus"),txt=$("paste").value.trim();
+  if(!txt){st.className="status err";st.textContent="Collez d'abord le texte des confrontations.";return}
+  $("importBtn").disabled=true;st.className="status";st.textContent="Lecture du texte…";
+  try{
+    let rows;
+    if(sample){
+      const r=await sample.json(`Tu extrais des confrontations directes de football d'un texte copié depuis un site de résultats.
+Équipe A = "${A()}". Équipe B = "${B()}". Si les noms diffèrent, prends les deux équipes du texte et renvoie leurs noms.
+Réponds uniquement en JSON : {"teamA":string,"teamB":string,"matches":[{"date":"AAAA-MM-JJ","venue":"A"|"B"|"N","ht":"butsA-butsB","ft":"butsA-butsB"}]}
+Scores TOUJOURS du point de vue A puis B. venue = équipe à domicile. ht = score à la mi-temps (souvent entre parenthèses) ; s'il manque, "ht":"". N'invente rien.
+Texte :
+"""${txt.slice(0,12000)}"""`,{modelTier:"quick",cache:false});
+      if(r&&r.teamA){S.teamA=r.teamA;$("teamA").value=r.teamA}
+      if(r&&r.teamB){S.teamB=r.teamB;$("teamB").value=r.teamB}
+      rows=(r&&r.matches)||[];
+    }else rows=simpleParse(txt);
+    if(!rows.length)throw {message:"Aucun match reconnu. Vérifiez que le texte contient les scores avec la mi-temps entre parenthèses, ex. 2-1 (1-0)."};
+    S.matches=rows.map(m=>({date:m.date||"",venue:["A","B","N"].includes(m.venue)?m.venue:"N",ht:m.ht||"",ft:m.ft||""}));
+    const miss=S.matches.filter(m=>!parse(m.ht)).length;
+    renderLinks();edited(true);
+    st.textContent=`${S.matches.length} match(s) importé(s).`+(miss?` ${miss} sans score à la mi-temps : complétez-les.`:"")+(sample?"":" Vérifiez le lieu de chaque match.");
+  }catch(e){st.className="status err";st.textContent=e&&e.code==="rate_limited"?"Trop de demandes, réessayez dans une minute.":(e&&e.message)||"La lecture a échoué."}
+  finally{$("importBtn").disabled=false}
+};
+
+renderRows();renderLinks();renderAll();showTab(S.tab||"analyse");
+(async()=>{try{sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null}catch(e){sample=null}})();
+})();
+</script>
+
+</body></html>
