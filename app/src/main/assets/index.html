@@ -149,6 +149,27 @@ nav.tabs button[aria-selected="true"]{color:var(--turf);background:var(--chip)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
 .legend i{display:inline-block;width:16px;height:0;border-top:3px solid var(--turf);vertical-align:middle;margin-right:5px}
 .legend i.e{border-top:3px dashed var(--amber)}
+/* matchs (captures) */
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.mrow .od{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:6px;align-items:center}
+.mrow input{width:100%}
+.mrow .od input{text-align:center;font-family:var(--f-num)}
+.mrow .od label{display:flex;flex-direction:column;gap:2px;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;min-width:0}
+.mcard{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.mcard .head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.mcard .teams2{font-family:var(--f-display);font-weight:700;font-size:1.2rem;text-transform:uppercase;line-height:1.15;min-width:0;overflow-wrap:anywhere}
+.pick{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--chip);border-radius:9px;padding:8px 10px}
+.pick .lbl{font-weight:600;min-width:0}
+.pick .pp{font-family:var(--f-display);font-weight:800;font-size:1.5rem;line-height:1}
+.pick.first{background:var(--turf);color:var(--turf-ink)}
+.pick.first .tr-g{color:var(--turf-ink);opacity:.8}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mini div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+.mini span{display:block;font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.mini b{font-family:var(--f-num);font-size:.95rem}
+.rank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.rank .bar{grid-column:1/-1}
+.ocrbox{font-family:var(--f-num);font-size:.78rem;white-space:pre-wrap;max-height:200px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
 @media (max-width:460px){.teams input{font-size:1.25rem}.big{font-size:2.1rem}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -166,6 +187,42 @@ nav.tabs button[aria-selected="true"]{color:var(--turf);background:var(--chip)}
     </div>
     <div class="meta" id="boardMeta">—</div>
   </header>
+
+  <!-- ONGLET MATCHS (captures) -->
+  <div id="tab-matchs" class="wrap" style="gap:16px" hidden>
+    <section class="panel" aria-labelledby="h-cap">
+      <h2 id="h-cap">Lire une capture d'écran</h2>
+      <p class="note">Faites une capture d'un site de cotes ou de pronostics où l'on voit les noms des équipes et les cotes 1 – X – 2 (ou les pourcentages). L'application lit le texte sur le téléphone, sans internet, puis calcule les probabilités de chaque issue.</p>
+      <div class="row"><button class="primary" id="capPick">Choisir des captures (5 max.)</button><button id="capAdd">+ Match à la main</button></div>
+      <span class="status" id="capStatus"></span>
+      <details>
+        <summary>Autre méthode : coller le texte</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          <p class="note">Sur Samsung : ouvrez la capture dans la Galerie, touchez le bouton « T » pour extraire le texte, copiez-le et collez-le ici. Une ligne par match, par exemple : <span class="num">Arsenal - Chelsea 1.85 3.60 4.20</span></p>
+          <textarea id="capText" placeholder="Collez ici le texte de la capture"></textarea>
+          <div class="row"><button id="capRead">Lire le texte</button></div>
+        </div>
+      </details>
+      <details id="capRawBox" hidden>
+        <summary>Texte lu sur la capture</summary>
+        <div class="ocrbox" id="capRaw"></div>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-capl">
+      <div class="row spread"><h2 id="h-capl">Matchs détectés</h2><button class="small" id="capClear">Tout effacer</button></div>
+      <p class="note">Vérifiez les noms et les cotes : corrigez ce qui a été mal lu. La cote « +2,5 » est facultative mais améliore les calculs de buts.</p>
+      <div id="capList"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-capr">
+      <h2 id="h-capr">Pronostics</h2>
+      <div class="field"><label class="label" for="capMarket">Afficher</label>
+        <select id="capMarket"></select></div>
+      <div id="capResults" style="display:flex;flex-direction:column;gap:12px"></div>
+      <p class="note">Les probabilités viennent des cotes de la capture, sans la marge du bookmaker, et d'un modèle de buts par mi-temps. Elles montrent ce qui est le plus probable, pas où le bookmaker se trompe : pour chercher de la valeur, touchez « Analyser en détail » et ajoutez les confrontations directes.</p>
+    </section>
+  </div>
 
   <!-- ONGLET TENDANCES -->
   <div id="tab-tendances" class="wrap" style="gap:16px" hidden>
@@ -301,10 +358,6 @@ nav.tabs button[aria-selected="true"]{color:var(--turf);background:var(--chip)}
       <h2>Historique</h2>
       <div id="betList"></div>
     </section>
-  </div>
-
-  <!-- ONGLET COMBINÉ -->
-  <div id="tab-combine" class="wrap" style="gap:16px" hidden>
     <section class="panel">
       <h2>Calculateur de combiné</h2>
       <p class="note">Ajoutez des sélections depuis l'onglet Marchés (bouton « Combiné ») ou à la main. Évitez deux sélections du même match : elles sont liées et le calcul devient faux.</p>
@@ -327,12 +380,12 @@ nav.tabs button[aria-selected="true"]{color:var(--turf);background:var(--chip)}
 </div>
 
 <nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" data-tab="matchs" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>Matchs</button>
   <button role="tab" data-tab="tendances" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Tendances</button>
   <button role="tab" data-tab="analyse" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/></svg>Analyse</button>
   <button role="tab" data-tab="marches" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Marchés</button>
   <button role="tab" data-tab="bankroll" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12.5h2M3 10h18"/></svg>Bankroll</button>
   <button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M6 3h11l3 3v15H6z"/><path d="M9 9h8M9 13h8M9 17h5"/></svg>Journal</button>
-  <button role="tab" data-tab="combine" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/><circle cx="19" cy="18" r="2"/></svg>Combiné</button>
 </nav>
 
 <script>
@@ -347,7 +400,7 @@ const SAMPLE_MATCHES=[
  {date:"2023-12-03",venue:"N",ht:"0-1",ft:"2-2"},{date:"2023-06-18",venue:"A",ht:"0-0",ft:"0-1"}];
 const DEFAULT={teamA:"AS Lukaya",teamB:"FC Mbudi",sample:true,recency:true,matches:SAMPLE_MATCHES,odds:{},apiKey:"",
   bank:{capital:"100",currency:"$",kelly:"0.25",maxPct:"3",dayLimit:"10",minEdge:"5"},
-  bets:[],combo:[],tab:"analyse"};
+  bets:[],combo:[],capture:[],tab:"matchs"};
 let S;
 try{S=JSON.parse(localStorage.getItem("foot-app")||"null")}catch(e){S=null}
 if(!S||!Array.isArray(S.matches))S=JSON.parse(JSON.stringify(DEFAULT));
@@ -357,7 +410,7 @@ function save(){try{localStorage.setItem("foot-app",JSON.stringify(S))}catch(e){
 
 const parse=s=>{const m=String(s||"").trim().match(/^(\d+)\s*[-:–]\s*(\d+)$/);return m?[+m[1],+m[2]]:null};
 const num=v=>{const x=parseFloat(String(v??"").replace(",","."));return isFinite(x)?x:NaN};
-const pct=x=>isFinite(x)?Math.round(x*100)+" %":"—";
+const pct=x=>isFinite(x)?Math.round(x*100)+"\u00a0%":"—";
 const fx=(x,d=2)=>isFinite(x)?x.toFixed(d):"—";
 const money=x=>isFinite(x)?(Math.round(x*100)/100).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+(S.bank.currency||""):"—";
 const pois=(l,k)=>{let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p};
@@ -656,13 +709,236 @@ $("trChips").onclick=e=>{const b=e.target.closest("[data-g]");if(b){trGroup=b.da
 $("trSort").onclick=e=>{const b=e.target.closest("[data-s]");if(b){trSortBy=b.dataset.s;renderTrends()}};
 $("trList").onclick=e=>{const b=e.target.closest(".tr");if(b){trOpen=trOpen===b.dataset.k?null:b.dataset.k;renderTrends()}};
 
-function renderAll(){model();renderBoard();renderTrends();renderAnalyse();renderMarkets();renderBank();renderJournal();renderCombo()}
+/* ---------- MATCHS : CAPTURES D'ÉCRAN ---------- */
+const H1_SHARE=0.44;  // part des buts marqués en 1re mi-temps (moyenne du football)
+function marketModel(lA1,lB1,lA2,lB2){
+  const sc=l=>1-Math.exp(-l),LA=lA1+lA2,LB=lB1+lB2,L1=lA1+lB1,L2=lA2+lB2;
+  const M={L1,L2,bt1:sc(lA1)*sc(lB1),bt2:sc(lA2)*sc(lB2),btts:sc(LA)*sc(LB),p1:0,pN:0,p2:0,more1:0,more2:0,eq:0};
+  const grid=[];
+  for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){const p=pois(LA,i)*pois(LB,j);grid.push({i,j,p});if(i>j)M.p1+=p;else if(i<j)M.p2+=p;else M.pN+=p}
+  M.ov=t=>grid.reduce((s,c)=>s+(c.i+c.j>t?c.p:0),0);
+  for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){const p=pois(L1,i)*pois(L2,j);if(i>j)M.more1+=p;else if(j>i)M.more2+=p;else M.eq+=p}
+  const probs={};MARKETS.forEach(mk=>probs[mk.k]=mk.m(M));
+  return {M,grid,probs,LA,LB};
+}
+function quick1x2(h,a){let p1=0,pN=0,p2=0,o25=0;for(let i=0;i<=10;i++){const pi=pois(h,i);for(let j=0;j<=10;j++){const p=pi*pois(a,j);if(i>j)p1+=p;else if(i<j)p2+=p;else pN+=p;if(i+j>2)o25+=p}}return [p1,pN,p2,o25]}
+/* Trouve les buts attendus des deux équipes qui reproduisent les probabilités des cotes */
+function fitGoals(q1,qN,q2,qO){
+  const err=(h,a)=>{const r=quick1x2(h,a);let e=(r[0]-q1)**2+(r[2]-q2)**2+0.5*(r[1]-qN)**2;
+    if(isFinite(qO))e+=(r[3]-qO)**2;else e+=0.004*(h+a-2.6)**2;return e};
+  let best={h:1.3,a:1.1,e:Infinity};
+  for(let h=0.2;h<=4.01;h+=0.15)for(let a=0.2;a<=4.01;a+=0.15){const e=err(h,a);if(e<best.e)best={h,a,e}}
+  let step=0.08;
+  for(let it=0;it<80&&step>0.002;it++){let moved=false;
+    for(const [dh,da] of [[step,0],[-step,0],[0,step],[0,-step]]){const h=best.h+dh,a=best.a+da;if(h<0.05||a<0.05)continue;const e=err(h,a);if(e<best.e){best={h,a,e};moved=true}}
+    if(!moved)step/=2}
+  return best;
+}
+function capProbs(m){
+  let q1,qN,q2;
+  const o1=num(m.o1),oN=num(m.oN),o2=num(m.o2),pc=[num(m.p1),num(m.pN),num(m.p2)];
+  if(o1>1&&oN>1&&o2>1){const s=1/o1+1/oN+1/o2;q1=1/o1/s;qN=1/oN/s;q2=1/o2/s;m.margin=s-1}
+  else if(pc.every(x=>x>=0)&&pc.reduce((a,b)=>a+b,0)>80){const s=pc[0]+pc[1]+pc[2];q1=pc[0]/s;qN=pc[1]/s;q2=pc[2]/s;m.margin=NaN}
+  else return null;
+  const oo=num(m.oO),ou=num(m.oU);let qO=NaN;
+  if(oo>1&&ou>1){const s=1/oo+1/ou;qO=1/oo/s}else if(oo>1){qO=Math.min(0.95,1/oo/1.06)}
+  const f=fitGoals(q1,qN,q2,qO);
+  const r=marketModel(f.h*H1_SHARE,f.a*H1_SHARE,f.h*(1-H1_SHARE),f.a*(1-H1_SHARE));
+  // les 3 probabilités 1-N-2 restent celles des cotes (plus fiables que le modèle)
+  const adj={"1":q1,"N":qN,"2":q2,"1N":q1+qN,"12":q1+q2,"N2":qN+q2};
+  for(const k in adj)r.probs[k]=adj[k];
+  if(isFinite(qO)){r.probs.o25=qO;r.probs.u25=1-qO}
+  r.lh=f.h;r.la=f.a;return r;
+}
+function verdict1x2(P,h,a){
+  const o=[["1",P["1"],h],["X",P.N,"nul"],["2",P["2"],a]].sort((x,y)=>y[1]-x[1]);
+  if(o[0][1]-o[1][1]<0.07){const dc={"1X":h+" ou nul","1 2":h+" ou "+a,"X2":"nul ou "+a}[[o[0][0],o[1][0]].sort().join("").replace("12","1 2")]||"";return `Indécis : ${esc(dc)} (${pct(o[0][1]+o[1][1])})`}
+  return `${o[0][0]} : ${esc(o[0][2])} (${pct(o[0][1])})`;
+}
+function labelFor(mk,h,a){const L={"1":"Victoire "+h,"2":"Victoire "+a,"1N":h+" ou nul","12":h+" ou "+a,"N2":"Nul ou "+a};return L[mk.k]||mk.l()}
+
+/* --- Lecture du texte --- */
+const NOISE=/\b(pronostics?|prono|tips?|prediction|pr[ée]dictions?|conseil|cotes?|odds|r[ée]sultats?|live|direct|ft|ht|mt|termin[ée]|aujourd'hui|demain|today|tomorrow|match|matchs|home|away|draw|nul|oui|non|yes|no|over|under|plus|moins|btts|gg|ng|1x2|bet|paris?|mise|voir|stats?|h2h|vs)\b/gi;
+function cleanName(t){
+  let x=String(t)
+    .replace(/\b\d{1,2}[.\/]\d{1,2}(?:[.\/]\d{2,4})?\.?(?=\s|$)/g," ")  // dates
+    .replace(/\b\d{1,2}[:h]\d{2}\b/g," ")                          // heures
+    .replace(/\d+[.,]\d+/g," ").replace(/\d+\s?%/g," ").replace(/\b\d+\b/g," ")
+    .replace(NOISE," ").replace(/[|•·★☆+*=#@()\[\]{}<>_"“”]/g," ").replace(/\s+/g," ").trim();
+  x=x.replace(/^[-–—:,.;\s]+|[-–—:,.;\s]+$/g,"");
+  return (x.match(/[A-Za-zÀ-ÿ]/g)||[]).length>=2?x:"";
+}
+function oddsIn(t){
+  const z=String(t).replace(/\b\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4}\b/g," ").replace(/\b\d{1,2}\.\d{1,2}\.(?=\s|$)/g," ").replace(/\b\d{1,2}[:h]\d{2}\b/g," ");
+  const out=[];let m;const re=/(^|[^\d.,])(\d{1,2}[.,]\d{1,2})(?![\d%])/g;
+  while((m=re.exec(z))){const v=num(m[2]);if(v>=1.01&&v<=60)out.push(v)}
+  return out;
+}
+function pctIn(t){const out=[];let m;const re=/(\d{1,3})\s?%/g;while((m=re.exec(String(t))))out.push(+m[1]);return out}
+function namesIn(row){
+  const out=[];
+  row.split(/\s*\|\s*/).forEach(cell=>{
+    cell.split(/\s+(?:-|–|—|vs\.?|v\.?|x)\s+/i).forEach(part=>{const n=cleanName(part);if(n)out.push(n)});
+  });
+  return out;
+}
+/* Regroupe les lignes lues sur l'image en rangées (même hauteur) */
+function rowsFromOcr(lines){
+  if(!lines.length)return [];
+  const hs=lines.map(l=>l.h).sort((a,b)=>a-b),mh=hs[Math.floor(hs.length/2)]||20;
+  const L=lines.map(l=>({...l,cy:l.y+l.h/2})).sort((a,b)=>a.cy-b.cy);
+  const rows=[];
+  L.forEach(l=>{const r=rows[rows.length-1];if(r&&Math.abs(l.cy-r.cy)<mh*0.55){r.items.push(l);r.cy=(r.cy*(r.items.length-1)+l.cy)/r.items.length}else rows.push({cy:l.cy,items:[l]})});
+  return rows.map(r=>r.items.sort((a,b)=>a.x-b.x).map(i=>i.t).join(" | "));
+}
+function parseRows(rows){
+  const R2=rows.map(t=>({t,names:namesIn(t),odds:oddsIn(t),pcts:pctIn(t)}));
+  const found=[];let i=0;
+  const take=(arr,start)=>{let od=[],pc=[];arr.forEach(r=>{od=od.concat(r.odds);pc=pc.concat(r.pcts)});let k=start;
+    while(od.length<3&&k<R2.length&&!R2[k].names.length&&R2[k].odds.length&&k<start+2){od=od.concat(R2[k].odds);k++}
+    return {od,pc,next:k}};
+  while(i<R2.length){
+    const r=R2[i];
+    if(r.names.length>=2){
+      const t=take([r],i+1);found.push({home:r.names[0],away:r.names[1],od:t.od,pc:t.pc});i=t.next;continue;
+    }
+    if(r.names.length===1){
+      // équipes l'une sous l'autre, avec parfois les cotes sur une rangée entre les deux
+      let j=i+1;const mid=[];
+      while(j<R2.length&&!R2[j].names.length&&(R2[j].odds.length||R2[j].pcts.length)&&mid.length<2){mid.push(R2[j]);j++}
+      if(j<R2.length&&R2[j].names.length===1){
+        const t=take([r,...mid,R2[j]],j+1);
+        if(t.od.length>=2||t.pc.length>=3){found.push({home:r.names[0],away:R2[j].names[0],od:t.od,pc:t.pc});i=t.next;continue}
+      }
+    }
+    i++;
+  }
+  return found.map(f=>{
+    const m={id:Date.now()+Math.random(),home:f.home,away:f.away,o1:"",oN:"",o2:"",oO:"",oU:"",p1:"",pN:"",p2:""};
+    if(f.od.length>=3){[m.o1,m.oN,m.o2]=f.od.slice(0,3).map(String);
+      if(f.od.length>=5){const s=1/f.od[3]+1/f.od[4];if(s>0.98&&s<1.2){m.oO=String(f.od[3]);m.oU=String(f.od[4])}}}
+    if(f.pc.length>=3){const s=f.pc[0]+f.pc[1]+f.pc[2];if(s>=90&&s<=110)[m.p1,m.pN,m.p2]=f.pc.slice(0,3).map(String)}
+    return m;
+  });
+}
+function addParsed(list,src){
+  const st=$("capStatus");
+  if(!list.length){st.className="status err";st.textContent=`Aucun match reconnu ${src}. Vérifiez que les noms des équipes et les cotes sont visibles, ou ajoutez les matchs à la main.`;return}
+  const key=m=>(m.home+"|"+m.away).toLowerCase();
+  const have=new Set(S.capture.map(key));let added=0;
+  list.forEach(m=>{if(!have.has(key(m))){S.capture.push(m);have.add(key(m));added++}});
+  save();renderCapture();
+  const ready=list.filter(m=>capProbs(m)).length;
+  st.className="status";st.textContent=`${added} match(s) ajouté(s) ${src}`+(ready<list.length?` · ${list.length-ready} sans cotes complètes : complétez-les.`:"")+" Vérifiez les noms ci-dessous.";
+}
+window.__ocrCb=function(json){
+  const st=$("capStatus");$("capPick").disabled=false;
+  let d;try{d=JSON.parse(json)}catch(e){st.className="status err";st.textContent="Réponse illisible.";return}
+  if(d.cancel){st.textContent="";return}
+  if(d.error){st.className="status err";st.textContent=d.error;return}
+  const rows=rowsFromOcr(d.lines||[]);
+  $("capRaw").textContent=rows.join("\n");$("capRawBox").hidden=!rows.length;
+  if(!rows.length){st.className="status err";st.textContent="Aucun texte trouvé sur la capture.";return}
+  addParsed(parseRows(rows),`depuis ${d.images>1?d.images+" captures":"la capture"}`);
+};
+$("capPick").onclick=()=>{
+  const st=$("capStatus");
+  if(window.AndroidOcr&&AndroidOcr.pick){st.className="status";st.textContent="Lecture des captures…";$("capPick").disabled=true;AndroidOcr.pick()}
+  else{st.className="status err";st.textContent="La lecture des captures fonctionne dans l'application Android. Ici, utilisez « Coller le texte ».";}
+};
+$("capRead").onclick=()=>{const t=$("capText").value.trim();if(!t){$("capStatus").className="status err";$("capStatus").textContent="Collez d'abord le texte.";return}
+  addParsed(parseRows(t.split(/\r?\n/).filter(x=>x.trim())),"depuis le texte");$("capText").value=""};
+$("capAdd").onclick=()=>{S.capture.unshift({id:Date.now(),home:"",away:"",o1:"",oN:"",o2:"",oO:"",oU:"",p1:"",pN:"",p2:""});save();renderCapture()};
+$("capClear").onclick=()=>{S.capture=[];save();renderCapture();$("capStatus").textContent=""};
+
+/* --- Affichage --- */
+function renderCapList(){
+  const box=$("capList");
+  if(!S.capture.length){box.innerHTML=`<p class="note">Aucun match pour l'instant. Choisissez une capture d'écran ou ajoutez un match à la main.</p>`;return}
+  box.innerHTML=S.capture.map((m,i)=>`<div class="mrow" data-i="${i}">
+    <input id="ch${i}" data-f="home" value="${esc(m.home)}" placeholder="Domicile" aria-label="Équipe à domicile">
+    <input id="ca${i}" data-f="away" value="${esc(m.away)}" placeholder="Extérieur" aria-label="Équipe à l'extérieur">
+    <button class="x" data-rm="${i}" aria-label="Supprimer ce match">✕</button>
+    <div class="od">
+      <label>1<input id="c1${i}" data-f="o1" value="${esc(m.o1)}" inputmode="decimal" placeholder="${m.p1?esc(m.p1)+"%":"cote"}"></label>
+      <label>X<input id="cn${i}" data-f="oN" value="${esc(m.oN)}" inputmode="decimal" placeholder="${m.pN?esc(m.pN)+"%":"cote"}"></label>
+      <label>2<input id="c2${i}" data-f="o2" value="${esc(m.o2)}" inputmode="decimal" placeholder="${m.p2?esc(m.p2)+"%":"cote"}"></label>
+      <label>+2,5<input id="co${i}" data-f="oO" value="${esc(m.oO)}" inputmode="decimal" placeholder="option"></label>
+      <span class="pill ${capProbs(m)?"good":"warn"}">${capProbs(m)?"Prêt":"À compléter"}</span>
+    </div></div>`).join("");
+}
+$("capList").addEventListener("change",e=>{const f=e.target.dataset.f;if(!f)return;const i=+e.target.closest(".mrow").dataset.i;S.capture[i][f]=e.target.value.trim();save();renderCapture()});
+$("capList").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(b){S.capture.splice(+b.dataset.rm,1);save();renderCapture()}});
+
+const CAP_KEYS=["1","N","2","1N","N2","o15","o25","u25","o35","btts","bt1","bt2","h1o05","h2o05","h1o15","h2o15","more1","more2","eq"];
+function fillCapMarket(){
+  const sel=$("capMarket");if(sel.options.length)return;
+  let h=`<option value="best">Meilleur choix pour chaque match</option>`,g="";
+  MARKETS.filter(mk=>CAP_KEYS.includes(mk.k)).forEach(mk=>{
+    if(mk.g!==g){if(g)h+="</optgroup>";g=mk.g;h+=`<optgroup label="${esc(g)}">`}
+    const lab={"1":"Victoire domicile","2":"Victoire extérieur","1N":"Domicile ou nul","N2":"Nul ou extérieur"}[mk.k]||mk.l();
+    h+=`<option value="${mk.k}">${esc(lab)}</option>`});
+  sel.innerHTML=h+"</optgroup>";sel.value=S.capMarket||"best";
+  sel.onchange=()=>{S.capMarket=sel.value;save();renderCapResults()};
+}
+function renderCapResults(){
+  fillCapMarket();
+  const box=$("capResults"),mode=$("capMarket").value;
+  const ready=S.capture.map((m,i)=>({m,i,r:capProbs(m)})).filter(x=>x.r&&x.m.home&&x.m.away);
+  if(!ready.length){box.innerHTML=`<p class="note">Les pronostics apparaissent dès qu'un match a ses deux équipes et ses trois cotes 1 – X – 2.</p>`;return}
+  const mk=k=>MARKETS.find(x=>x.k===k);
+  if(mode!=="best"){
+    const m0=mk(mode);
+    const list=ready.map(x=>({...x,p:x.r.probs[mode]})).sort((a,b)=>b.p-a.p);
+    box.innerHTML=list.map(x=>`<div class="rank"><div style="min-width:0"><b>${esc(x.m.home)} – ${esc(x.m.away)}</b><div class="note">${esc(labelFor(m0,x.m.home,x.m.away))} · cote juste ${fx(1/x.p)}</div></div>
+      <span class="tr-p">${pct(x.p)}</span><div class="bar${x.p>=0.65?" hot":""}"><i style="width:${Math.round(x.p*100)}%"></i></div></div>`).join("");
+    return;
+  }
+  const cards=ready.map(x=>{
+    const ranked=CAP_KEYS.map(k=>({k,p:x.r.probs[k]})).sort((a,b)=>b.p-a.p);
+    return {...x,ranked,top:ranked[0].p};
+  }).sort((a,b)=>b.top-a.top);
+  box.innerHTML=cards.map(x=>{
+    const P=x.r.probs,h=x.m.home,a=x.m.away;
+    const top=x.ranked.slice(0,3).map((t,j)=>`<div class="pick${j===0?" first":""}"><div class="lbl"><div class="tr-g">${esc(mk(t.k).g)}</div>${esc(labelFor(mk(t.k),h,a))}</div><div style="text-align:right"><div class="pp">${pct(t.p)}</div><div class="note" style="color:inherit;opacity:.8">cote juste ${fx(1/t.p)}</div></div></div>`).join("");
+    const best=x.r.grid.slice().sort((p,q)=>q.p-p.p)[0];
+    const half=P.more2>P.more1?"2ᵉ MT":"1ʳᵉ MT";
+    return `<div class="mcard"><div class="head"><div class="teams2">${esc(h)}<br><span style="color:var(--muted);font-size:.9rem">contre</span> ${esc(a)}</div>
+      <button class="small" data-det="${x.i}">Analyser en détail</button></div>
+      <div class="sub"><span>Pronostic 1 X 2</span><b>${verdict1x2(P,h,a)}</b>
+        <span>Buts</span><b>${P.o25>=0.5?"Plus de 2,5 ("+pct(P.o25)+")":"Moins de 2,5 ("+pct(1-P.o25)+")"}</b>
+        <span>Les deux marquent</span><b>${P.btts>=0.5?"Oui ("+pct(P.btts)+")":"Non ("+pct(1-P.btts)+")"}</b></div>
+      <div class="label">Issues les plus probables</div>
+      ${top}
+      <div class="mini">
+        <div><span>1 / X / 2</span><b>${Math.round(P["1"]*100)}/${Math.round(P.N*100)}/${Math.round(P["2"]*100)}</b></div>
+        <div><span>+2,5 buts</span><b>${pct(P.o25)}</b></div>
+        <div><span>Les 2 marquent</span><b>${pct(P.btts)}</b></div>
+        <div><span>2 marquent 1ʳᵉ MT</span><b>${pct(P.bt1)}</b></div>
+        <div><span>2 marquent 2ᵉ MT</span><b>${pct(P.bt2)}</b></div>
+        <div><span>MT prolifique</span><b>${half} ${pct(Math.max(P.more1,P.more2))}</b></div>
+      </div>
+      <div class="note">Score le plus probable : <b class="num">${best.i}-${best.j}</b> (${pct(best.p)}) · buts attendus ${fx(x.r.lh)} – ${fx(x.r.la)}${isFinite(x.m.margin)?` · marge du bookmaker ${(x.m.margin*100).toFixed(1)} %`:""}</div>
+    </div>`}).join("");
+}
+$("capResults").addEventListener("click",e=>{const b=e.target.closest("[data-det]");if(!b)return;const m=S.capture[+b.dataset.det];
+  if((S.teamA||"").toLowerCase()!==m.home.toLowerCase()||(S.teamB||"").toLowerCase()!==m.away.toLowerCase())S.matches=[];
+  S.teamA=m.home;S.teamB=m.away;$("teamA").value=m.home;$("teamB").value=m.away;S.sample=false;
+  S.odds={"1":m.o1,"N":m.oN,"2":m.o2,o25:m.oO,u25:m.oU};teamIds=null;save();
+  $("markets").textContent="";renderRows();renderLinks();renderAll();showTab("analyse");
+  toast("Ajoutez les confrontations directes pour affiner l'analyse");});
+function renderCapture(){renderCapList();renderCapResults()}
+
+function renderAll(){model();renderBoard();renderTrends();renderCapture();renderAnalyse();renderMarkets();renderBank();renderJournal();renderCombo()}
 function edited(rows){S.sample=false;save();if(rows)renderRows();renderAll()}
 
 /* ---------- ONGLETS ---------- */
+const TABS=["matchs","tendances","analyse","marches","bankroll","journal"];
 function showTab(t){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false"));
-  ["tendances","analyse","marches","bankroll","journal","combine"].forEach(x=>$("tab-"+x).hidden=x!==t);
+  if(t==="combine")t="journal";
+  if(!TABS.includes(t))t="matchs";
+  TABS.forEach(x=>$("tab-"+x).hidden=x!==t);
   S.tab=t;save();window.scrollTo(0,0);
 }
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
@@ -818,7 +1094,7 @@ Texte :
   finally{$("importBtn").disabled=false}
 };
 
-renderRows();renderLinks();renderAll();if(!S.seenTrends){S.seenTrends=true;S.tab="tendances"}showTab(S.tab||"tendances");
+renderRows();renderLinks();renderAll();if(!S.seenCapture){S.seenCapture=true;S.tab="matchs"}showTab(S.tab||"matchs");
 (async()=>{try{sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null}catch(e){sample=null}})();
 })();
 </script>

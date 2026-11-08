@@ -3,6 +3,7 @@ package com.salem.footanalyse
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -11,8 +12,14 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -22,6 +29,15 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var web: WebView
     private val io = Executors.newFixedThreadPool(3)
+
+    // Lecture du texte des captures d'écran, directement sur le téléphone (sans internet).
+    private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+
+    private val pickImages =
+        registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
+            if (uris.isNullOrEmpty()) deliverOcr(JSONObject().put("cancel", true))
+            else runOcr(uris)
+        }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +68,7 @@ class MainActivity : ComponentActivity() {
         }
 
         web.addJavascriptInterface(NetBridge(), "AndroidNet")
+        web.addJavascriptInterface(OcrBridge(), "AndroidOcr")
 
         web.webViewClient = object : WebViewClient() {
             // Les liens externes (Flashscore, SofaScore, Google) s'ouvrent dans le navigateur.
@@ -84,6 +101,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         io.shutdownNow()
+        try { recognizer.close() } catch (e: Exception) { }
         web.destroy()
         super.onDestroy()
     }
@@ -113,6 +131,68 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Choix des captures d'écran depuis la galerie. */
+    inner class OcrBridge {
+        @JavascriptInterface
+        fun pick() {
+            runOnUiThread {
+                try {
+                    pickImages.launch(
+                        PickVisualMediaRequest.Builder()
+                            .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            .build()
+                    )
+                } catch (e: Exception) {
+                    deliverOcr(JSONObject().put("error", "Impossible d'ouvrir la galerie."))
+                }
+            }
+        }
+    }
+
+    /** Lit chaque image l'une après l'autre et renvoie les lignes de texte avec leur position. */
+    private fun runOcr(uris: List<Uri>) {
+        val lines = JSONArray()
+        fun step(i: Int, yOffset: Int) {
+            if (i >= uris.size) {
+                deliverOcr(JSONObject().put("lines", lines).put("images", uris.size))
+                return
+            }
+            val image = try {
+                InputImage.fromFilePath(this, uris[i])
+            } catch (e: Exception) {
+                deliverOcr(JSONObject().put("error", "L'image ${i + 1} n'a pas pu être ouverte."))
+                return
+            }
+            recognizer.process(image)
+                .addOnSuccessListener { result ->
+                    for (block in result.textBlocks) {
+                        for (line in block.lines) {
+                            val b = line.boundingBox ?: continue
+                            lines.put(
+                                JSONObject()
+                                    .put("t", line.text)
+                                    .put("x", b.left)
+                                    .put("y", b.top + yOffset)
+                                    .put("w", b.width())
+                                    .put("h", b.height())
+                                    .put("img", i)
+                            )
+                        }
+                    }
+                    step(i + 1, yOffset + image.height + 400)
+                }
+                .addOnFailureListener {
+                    deliverOcr(JSONObject().put("error", "La lecture de l'image ${i + 1} a échoué."))
+                }
+        }
+        step(0, 0)
+    }
+
+    private fun deliverOcr(obj: JSONObject) {
+        val js = "window.__ocrCb && window.__ocrCb(${JSONObject.quote(obj.toString())})"
+        runOnUiThread { if (!isFinishing) web.evaluateJavascript(js, null) }
     }
 
     private fun deliver(id: Int, status: Int, body: String) {

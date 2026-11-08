@@ -14,6 +14,8 @@ android {
         // Numéro de version = numéro de la compilation GitHub (chaque mise à jour s'installe par-dessus l'ancienne).
         versionCode = project.findProperty("vc")?.toString()?.toIntOrNull() ?: 1
         versionName = "1." + (project.findProperty("vc")?.toString() ?: "0")
+        // Téléphones Android récents (dont Samsung S21) : réduit la taille de l'APK
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     // Clé de signature fixe : les mises à jour s'installent sans désinstaller (le journal est conservé).
@@ -44,4 +46,6 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.activity:activity-ktx:1.10.1")
+    // Reconnaissance de texte sur le téléphone (lecture des captures d'écran)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }
