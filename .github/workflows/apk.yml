@@ -10,8 +10,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
+          java-version: 
       - name: Construire
         run: |
           unzip -o FootAnalyse-Android.zip
